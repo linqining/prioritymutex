@@ -22,7 +22,7 @@ func (p *PriorityMutex) PUnlock() {
 }
 
 func (p *PriorityMutex) Lock() {
-	if p.pCount.Load() > 0 {
+	for p.pCount.Load() > 0 {
 		runtime.Gosched()
 	}
 	p.l.Lock()
