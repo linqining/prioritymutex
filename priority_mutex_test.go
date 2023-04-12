@@ -9,7 +9,7 @@ import (
 
 func priority(ctx context.Context, p *PriorityMutex, lockFlag chan struct{}) {
 	p.PLock()
-	defer p.Unlock()
+	defer p.PUnlock()
 	lockFlag <- struct{}{}
 	<-ctx.Done()
 }
