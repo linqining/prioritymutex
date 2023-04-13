@@ -2,6 +2,7 @@ package prioritymutex
 
 import (
 	"context"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -50,4 +51,54 @@ func TestPriorityMutex(t *testing.T) {
 	if atomic.LoadInt32(&flag) != 1 {
 		t.Fatal("flag not change")
 	}
+}
+
+func TestPriority(t *testing.T) {
+	p := &PriorityMutex{}
+	sigchan := make(chan struct{})
+	var counter int64
+	doneChan := make(chan struct{}, 1)
+	go func(pm *PriorityMutex) {
+		<-sigchan
+		pm.Lock()
+		defer pm.Unlock()
+		t.Log(atomic.LoadInt64(&counter))
+		doneChan <- struct{}{}
+	}(p)
+	for i := 0; i < 1000; i++ {
+		go func(pm *PriorityMutex) {
+			<-sigchan
+			pm.PLock()
+			defer pm.PUnlock()
+			atomic.AddInt64(&counter, 1)
+		}(p)
+	}
+
+	close(sigchan)
+	<-doneChan
+}
+
+func TestSyncMutex(t *testing.T) {
+	p := &sync.Mutex{}
+	sigchan := make(chan struct{})
+	var counter int64
+	doneChan := make(chan struct{}, 1)
+	go func(pm *sync.Mutex) {
+		<-sigchan
+		pm.Lock()
+		defer pm.Unlock()
+		t.Log(atomic.LoadInt64(&counter))
+		doneChan <- struct{}{}
+	}(p)
+	for i := 0; i < 1000; i++ {
+		go func(pm *sync.Mutex) {
+			<-sigchan
+			pm.Lock()
+			defer pm.Unlock()
+			atomic.AddInt64(&counter, 1)
+		}(p)
+	}
+
+	close(sigchan)
+	<-doneChan
 }
