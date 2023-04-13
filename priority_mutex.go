@@ -22,10 +22,17 @@ func (p *PriorityMutex) PUnlock() {
 }
 
 func (p *PriorityMutex) Lock() {
-	for p.pCount.Load() > 0 {
-		runtime.Gosched()
+	for {
+		for p.pCount.Load() > 0 {
+			runtime.Gosched()
+		}
+		p.l.Lock()
+		if p.pCount.Load() == 0 {
+			return
+		} else {
+			p.l.Unlock()
+		}
 	}
-	p.l.Lock()
 }
 
 func (p *PriorityMutex) Unlock() {
